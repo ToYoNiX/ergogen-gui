@@ -2489,51 +2489,77 @@
 	function requireDiode$1 () {
 		if (hasRequiredDiode$1) return diode$1;
 		hasRequiredDiode$1 = 1;
+		// Any diode (THT, SMD, or both)
+		// Nets
+		//    from: corresponds to pin 1 (anode)
+		//    to: corresponds to pin 2 (cathode)
+		// Params
+		//    tht: default is true
+		//      if true, will include through-hole pads
+		//    smd: default is true
+		//      if true, will include SMD pads on both sides for reversible builds
+		//    pin_distance: default is 7.62
+		//      distance between THT pads in mm
+		//    smd_pin_distance: default is 3.3
+		//      distance between SMD pads in mm
+		//
+		// note: tht and smd can be used simultaneously (default), or individually
+
 		diode$1 = {
-		    params: {
-		        designator: 'D',
-		        from: undefined,
-		        to: undefined
-		    },
-		    body: p => `
-  
-    (module ComboDiode (layer F.Cu) (tedit 5B24D78E)
+		  params: {
+		    designator: "D",
+		    pin_distance: 7.62,
+		    smd_pin_distance: 3.3,
+		    tht: true,
+		    smd: true,
+		    from: undefined,
+		    to: undefined,
+		  },
+		  body: (p) => {
+		    const half = p.pin_distance / 2;
+		    const smd_half = p.smd_pin_distance / 2;
 
-
-        ${p.at /* parametric position */}
-
-        ${'' /* footprint reference */}
-        (fp_text reference "${p.ref}" (at 0 0) (layer F.SilkS) ${p.ref_hide} (effects (font (size 1.27 1.27) (thickness 0.15))))
-        (fp_text value "" (at 0 0) (layer F.SilkS) hide (effects (font (size 1.27 1.27) (thickness 0.15))))
-        
-        ${''/* diode symbols */}
-        (fp_line (start 0.25 0) (end 0.75 0) (layer F.SilkS) (width 0.1))
-        (fp_line (start 0.25 0.4) (end -0.35 0) (layer F.SilkS) (width 0.1))
-        (fp_line (start 0.25 -0.4) (end 0.25 0.4) (layer F.SilkS) (width 0.1))
-        (fp_line (start -0.35 0) (end 0.25 -0.4) (layer F.SilkS) (width 0.1))
-        (fp_line (start -0.35 0) (end -0.35 0.55) (layer F.SilkS) (width 0.1))
-        (fp_line (start -0.35 0) (end -0.35 -0.55) (layer F.SilkS) (width 0.1))
-        (fp_line (start -0.75 0) (end -0.35 0) (layer F.SilkS) (width 0.1))
-        (fp_line (start 0.25 0) (end 0.75 0) (layer B.SilkS) (width 0.1))
-        (fp_line (start 0.25 0.4) (end -0.35 0) (layer B.SilkS) (width 0.1))
-        (fp_line (start 0.25 -0.4) (end 0.25 0.4) (layer B.SilkS) (width 0.1))
-        (fp_line (start -0.35 0) (end 0.25 -0.4) (layer B.SilkS) (width 0.1))
-        (fp_line (start -0.35 0) (end -0.35 0.55) (layer B.SilkS) (width 0.1))
-        (fp_line (start -0.35 0) (end -0.35 -0.55) (layer B.SilkS) (width 0.1))
-        (fp_line (start -0.75 0) (end -0.35 0) (layer B.SilkS) (width 0.1))
-    
-        ${''/* SMD pads on both sides */}
-        (pad 1 smd rect (at -1.65 0 ${p.r}) (size 0.9 1.2) (layers F.Cu F.Paste F.Mask) ${p.to})
-        (pad 2 smd rect (at 1.65 0 ${p.r}) (size 0.9 1.2) (layers B.Cu B.Paste B.Mask) ${p.from})
-        (pad 1 smd rect (at -1.65 0 ${p.r}) (size 0.9 1.2) (layers B.Cu B.Paste B.Mask) ${p.to})
-        (pad 2 smd rect (at 1.65 0 ${p.r}) (size 0.9 1.2) (layers F.Cu F.Paste F.Mask) ${p.from})
-        
-        ${''/* THT terminals */}
-        (pad 1 thru_hole rect (at -3.81 0 ${p.r}) (size 1.778 1.778) (drill 0.9906) (layers *.Cu *.Mask) ${p.to})
-        (pad 2 thru_hole circle (at 3.81 0 ${p.r}) (size 1.905 1.905) (drill 0.9906) (layers *.Cu *.Mask) ${p.from})
-    )
-  
-    `
+		    const standard = `
+      (module ComboDiode (layer F.Cu) (tedit 5B24D78E)	
+				${p.at /* parametric position */}
+				${"" /* footprint reference */}
+				(fp_text reference "${p.ref}" (at 0 0) (layer F.SilkS) ${p.ref_hide} (effects (font (size 1.27 1.27) (thickness 0.15))))
+				(fp_text value "" (at 0 0) (layer F.SilkS) hide (effects (font (size 1.27 1.27) (thickness 0.15))))
+				${"" /* diode symbols */}
+				(fp_line (start 0.25 0) (end 0.75 0) (layer F.SilkS) (width 0.1))
+				(fp_line (start 0.25 0.4) (end -0.35 0) (layer F.SilkS) (width 0.1))
+				(fp_line (start 0.25 -0.4) (end 0.25 0.4) (layer F.SilkS) (width 0.1))
+				(fp_line (start -0.35 0) (end 0.25 -0.4) (layer F.SilkS) (width 0.1))
+				(fp_line (start -0.35 0) (end -0.35 0.55) (layer F.SilkS) (width 0.1))
+				(fp_line (start -0.35 0) (end -0.35 -0.55) (layer F.SilkS) (width 0.1))
+				(fp_line (start -0.75 0) (end -0.35 0) (layer F.SilkS) (width 0.1))
+				(fp_line (start 0.25 0) (end 0.75 0) (layer B.SilkS) (width 0.1))
+				(fp_line (start 0.25 0.4) (end -0.35 0) (layer B.SilkS) (width 0.1))
+				(fp_line (start 0.25 -0.4) (end 0.25 0.4) (layer B.SilkS) (width 0.1))
+				(fp_line (start -0.35 0) (end 0.25 -0.4) (layer B.SilkS) (width 0.1))
+				(fp_line (start -0.35 0) (end -0.35 0.55) (layer B.SilkS) (width 0.1))
+				(fp_line (start -0.35 0) (end -0.35 -0.55) (layer B.SilkS) (width 0.1))
+				(fp_line (start -0.75 0) (end -0.35 0) (layer B.SilkS) (width 0.1))
+      `;
+		    const tht_pads = `
+				${"" /* THT terminals */}
+				(pad 1 thru_hole rect (at -${half} 0 ${p.r}) (size 1.778 1.778) (drill 0.9906) (layers *.Cu *.Mask) ${p.to})
+				(pad 2 thru_hole circle (at ${half} 0 ${p.r}) (size 1.905 1.905) (drill 0.9906) (layers *.Cu *.Mask) ${p.from})
+      `;
+		    const smd_pads = `
+				${"" /* SMD pads on both sides */}
+				(pad 1 smd rect (at -${smd_half} 0 ${p.r}) (size 0.9 1.2) (layers F.Cu F.Paste F.Mask) ${p.to})
+				(pad 2 smd rect (at ${smd_half} 0 ${p.r}) (size 0.9 1.2) (layers B.Cu B.Paste B.Mask) ${p.from})
+				(pad 1 smd rect (at -${smd_half} 0 ${p.r}) (size 0.9 1.2) (layers B.Cu B.Paste B.Mask) ${p.to})
+				(pad 2 smd rect (at ${smd_half} 0 ${p.r}) (size 0.9 1.2) (layers F.Cu F.Paste F.Mask) ${p.from})
+      `;
+		    return `
+			${standard}
+			${p.tht ? tht_pads : ""}
+			${p.smd ? smd_pads : ""}
+			)
+    `;
+		  },
 		};
 		return diode$1;
 	}
@@ -2634,6 +2660,8 @@
 		//      if true, will flip the footprint such that the pcb can be reversible 
 		//    keycaps: default is false
 		//      if true, will add choc sized keycap box around the footprint
+		//    stabilizers: default is false
+		//      if true, will add stabilizer holes for 2u+ switches
 		//
 		// note: hotswap and reverse can be used simultaneously
 
@@ -2643,6 +2671,7 @@
 		    hotswap: false,
 		    reverse: false,
 		    keycaps: false,
+		    stabilizers: false,
 		    from: undefined,
 		    to: undefined
 		  },
@@ -2664,10 +2693,11 @@
       (fp_line (start 7 -7) (end 6 -7) (layer Dwgs.User) (width 0.15))
       (fp_line (start 6 7) (end 7 7) (layer Dwgs.User) (width 0.15))
       (fp_line (start 7 -7) (end 7 -6) (layer Dwgs.User) (width 0.15))
-    
+
       ${''/* middle shaft */}
       (pad "" np_thru_hole circle (at 0 0) (size 3.9878 3.9878) (drill 3.9878) (layers *.Cu *.Mask))
-
+      `;
+		    const stabilizer = `
       ${''/* stabilizers */}
       (pad "" np_thru_hole circle (at 5.08 0) (size 1.7018 1.7018) (drill 1.7018) (layers *.Cu *.Mask))
       (pad "" np_thru_hole circle (at -5.08 0) (size 1.7018 1.7018) (drill 1.7018) (layers *.Cu *.Mask))
@@ -2701,6 +2731,7 @@
 		    if(p.reverse){
 		      return `
         ${standard}
+        ${p.stabilizers ? stabilizer : ''}
         ${p.keycaps ? keycap : ''}
         ${pins('-', '', 'B')}
         ${pins('', '-', 'F')})
@@ -2708,6 +2739,7 @@
 		    } else {
 		      return `
         ${standard}
+        ${p.stabilizers ? stabilizer : ''}
         ${p.keycaps ? keycap : ''}
         ${pins('-', '', 'B')})
         `
@@ -3067,6 +3099,7 @@
 		//    A: corresponds to pin 1 (for rotary)
 		//    B: corresponds to pin 2 (for rotary, should be GND)
 		//    C: corresponds to pin 3 (for rotary)
+		//    legs: corresponds to the 2 mounting legs (should be connected to GND for stability)
 
 		rotary = {
 		    params: {
@@ -3075,7 +3108,8 @@
 		        to: undefined,
 		        A: undefined,
 		        B: undefined,
-		        C: undefined
+		        C: undefined,
+		        legs: undefined
 		    },
 		    body: p => `
         (module rotary_encoder (layer F.Cu) (tedit 603326DE)
@@ -3124,8 +3158,8 @@
             (pad 2 thru_hole circle (at 6.88 2.46) (size 1.5 1.5) (drill 1) (layers *.Cu *.Mask) ${p.to})
 
             ${''/* Legs */}
-            (pad "" thru_hole rect (at -0.12 -5.64 ${p.r}) (size 3.2 2) (drill oval 2.8 1.5) (layers *.Cu *.Mask))
-            (pad "" thru_hole rect (at -0.12 5.56 ${p.r})  (size 3.2 2) (drill oval 2.8 1.5) (layers *.Cu *.Mask))
+            (pad "" thru_hole rect (at -0.12 -5.64 ${p.r}) (size 3.2 2) (drill oval 2.8 1.5) (layers *.Cu *.Mask) ${p.legs})
+            (pad "" thru_hole rect (at -0.12 5.56 ${p.r})  (size 3.2 2) (drill oval 2.8 1.5) (layers *.Cu *.Mask) ${p.legs})
         )
     `
 		};
@@ -7412,11 +7446,13 @@
       (at -${p.mounting_holes_position} 0 ${p.r - 90})
       (size ${p.mounting_holes_height} ${p.mounting_holes_width})
       (drill oval ${p.mounting_holes_height} ${p.mounting_holes_width})
+      (layers "*.Cu" "*.Mask")
     )    
     (pad "" np_thru_hole oval
       (at ${p.mounting_holes_position} 0 ${p.r - 90})
       (size ${p.mounting_holes_height} ${p.mounting_holes_width})
       (drill oval ${p.mounting_holes_height} ${p.mounting_holes_width})
+      (layers "*.Cu" "*.Mask")
     )
     `;
 		    const plate_hole = `
@@ -8576,7 +8612,7 @@
 
 		    const hotswap_back = `
     (pad "1" thru_hole circle (at -4.4 4.7 ${p.r}) (size 3.5 3.5) (drill 3) (layers "*.Cu" "*.Mask") ${p.from.str})
-    (pad ${p.reversible ? '""' : '"2"'} thru_hole circle(at 2.6 5.75 ${p.r}) (size 3.5 3.5) (drill 3) (layers "*.Cu" "*.Mask") ${p.to.str})
+    (pad ${p.reversible ? '""' : '"2"'} thru_hole circle (at 2.6 5.75 ${p.r}) (size 3.5 3.5) (drill 3) (layers "*.Cu" "*.Mask") ${p.to.str})
 
     
     (pad "1" smd roundrect (at ${ -7.35 + (2.6 - p.outer_pad_width_back) / 2} 4.7 ${p.r}) (size ${p.outer_pad_width_back + 1.4} 2.5) (layers "B.Cu") (roundrect_rratio 0.1) ${p.from.str})
@@ -9359,10 +9395,10 @@
 		//
 		//  Normal / single side
 		//     ____________________
-		//    |   (TP)   (R2) (SL)|_
-		//    |                   | |
-		//    | (R1)              |_|
-		//    |___________________|
+		//    |                   |_
+		//    | (R1)              | |
+		//    |                   |_|
+		//    |___(TP)___(R2)_(SL)|
 		// 
 		//  Reversible
 		//     ____________________
