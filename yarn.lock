@@ -4972,7 +4972,7 @@ entities@^4.4.0:
 
 ergogen@ToYoNiX/ergogen-cli#develop:
   version "4.2.1"
-  resolved "https://codeload.github.com/ToYoNiX/ergogen-cli/tar.gz/1e6a2676602abdc286df108f02ca04f4696eba51"
+  resolved "https://codeload.github.com/ToYoNiX/ergogen-cli/tar.gz/28276271206bae9585de7e594facadee1ef5d4b0"
   dependencies:
     fs-extra "^11.3.2"
     hull "github:andriiheonia/hull"

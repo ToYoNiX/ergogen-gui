@@ -1,5 +1,5 @@
 #!/bin/sh
-# Pull @ceoloide and @infused-kim footprint libraries
+# Pull @ceoloide footprint library
 if [ ! -d node_modules/ergogen ]; then
   echo "Installing Ergogen..."
   npm install ergogen
@@ -11,16 +11,10 @@ if [ -d node_modules/ergogen ]; then
     rm -rf node_modules/ergogen/src/footprints/ceoloide
   fi
   git clone https://github.com/ceoloide/ergogen-footprints.git node_modules/ergogen/src/footprints/ceoloide
-  if [ -d node_modules/ergogen/src/footprints/infused-kim ]; then 
-    echo "Removing existing @infused-kim's footprint library"
-    rm -rf node_modules/ergogen/src/footprints/infused-kim
-  fi
-  git clone https://github.com/infused-kim/kb_ergogen_fp.git node_modules/ergogen/src/footprints/infused-kim
   # Add the footprints to the index
   echo "Patching footprints/index.js..."
   cp -f patch/footprints_index.js node_modules/ergogen/src/footprints/index.js
-  echo "Patching footprints/trrsbreakoutv3.js..."
-  cp -f patch/trrsbreakoutv3.js node_modules/ergogen/src/footprints/trrsbreakoutv3.js
+
 else
   echo "Directory node_modules/ergogen not found."
 fi
