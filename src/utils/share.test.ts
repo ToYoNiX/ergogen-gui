@@ -110,16 +110,16 @@ describe('share utilities', () => {
 
     it('creates URI with config only', () => {
       const uri = createShareableUri(testConfig);
-      expect(uri).toMatch(/^https:\/\/example.com\/#/);
-      const fragment = uri.split('#')[1];
-      expect(fragment).toBeTruthy();
+      expect(uri).toMatch(/^https:\/\/example\.com\/\?c=/);
+      const param = new URL(uri).searchParams.get('c');
+      expect(param).toBeTruthy();
     });
 
     it('creates URI with config and injections', () => {
       const uri = createShareableUri(testConfig, testInjections);
-      expect(uri).toMatch(/^https:\/\/example.com\/#/);
-      const fragment = uri.split('#')[1];
-      expect(fragment).toBeTruthy();
+      expect(uri).toMatch(/^https:\/\/example\.com\/\?c=/);
+      const param = new URL(uri).searchParams.get('c');
+      expect(param).toBeTruthy();
     });
   });
 
@@ -128,21 +128,21 @@ describe('share utilities', () => {
       // Mock window.location
       Object.defineProperty(window, 'location', {
         value: {
-          hash: '',
+          search: '',
         },
         writable: true,
       });
     });
 
-    it('returns null when no hash fragment exists', () => {
-      window.location.hash = '';
+    it('returns null when no share param exists', () => {
+      window.location.search = '';
       const config = getConfigFromHash();
       expect(config).toBeNull();
     });
 
-    it('decodes config from hash fragment', () => {
+    it('decodes config from ?c= param', () => {
       const encoded = encodeConfig(testConfig);
-      window.location.hash = `#${encoded}`;
+      window.location.search = `?c=${encoded}`;
       const decoded = getConfigFromHash();
       expect(decoded).not.toBeNull();
       if (decoded) {
@@ -153,9 +153,9 @@ describe('share utilities', () => {
       }
     });
 
-    it('decodes config with injections from hash fragment', () => {
+    it('decodes config with injections from ?c= param', () => {
       const encoded = encodeConfig(testConfig, testInjections);
-      window.location.hash = `#${encoded}`;
+      window.location.search = `?c=${encoded}`;
       const decoded = getConfigFromHash();
       expect(decoded).not.toBeNull();
       if (decoded) {
@@ -167,8 +167,8 @@ describe('share utilities', () => {
       }
     });
 
-    it('returns decode error for invalid hash fragment', () => {
-      window.location.hash = '#invalid';
+    it('returns decode error for invalid ?c= param', () => {
+      window.location.search = '?c=invalid';
       const decoded = getConfigFromHash();
       expect(decoded).not.toBeNull();
       if (decoded) {

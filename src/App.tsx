@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useLocalStorage } from 'react-use';
 import styled from 'styled-components';
@@ -57,19 +57,16 @@ const App = () => {
         CONFIG_LOCAL_STORAGE_KEY,
         JSON.stringify(initialConfig)
       );
-      // Clear the hash fragment after reading it
-      window.history.replaceState(
-        null,
-        '',
-        window.location.pathname + window.location.search
-      );
+      // Clear the share param after reading it
+      const _url = new URL(window.location.href);
+      _url.searchParams.delete('c');
+      window.history.replaceState(null, '', _url.pathname + _url.search);
     } else {
       // Store error message to display after ConfigContext is available
       hashError = hashResult.message;
-      console.error('[App] Failed to load shared configuration from hash', {
+      console.error('[App] Failed to load shared configuration from ?c= param', {
         error: hashResult.error,
         message: hashResult.message,
-        hashLength: window.location.hash.length,
       });
       // Clear the hash fragment to prevent retrying on navigation
       window.history.replaceState(
@@ -134,84 +131,6 @@ const AppContent = () => {
   // Get configInput from context to ensure we have the latest value
   const configInput = configContext?.configInput;
 
-  /**
-   * Effect to handle hash fragment changes when navigating to shared configurations.
-   * This allows loading shared configs even when already on the Ergogen page.
-   * Note: Initial hash loading is handled synchronously in App.tsx before render,
-   * so this only handles subsequent hash changes (e.g., navigating to a shared URL).
-   */
-  useEffect(() => {
-    if (!configContext) {
-      return;
-    }
-
-    const handleHashChange = () => {
-      const hashResult = getConfigFromHash();
-      if (!hashResult) {
-        return;
-      }
-
-      if (hashResult.success) {
-        const sharedConfig = hashResult.config;
-        // Update config
-        configContext.setConfigInput(sharedConfig.config);
-        // Merge injections: shared injections overwrite existing ones with same type+name, but keep others
-        const mergedInjections = sharedConfig.injections
-          ? mergeInjectionArrays(
-              sharedConfig.injections,
-              configContext.injectionInput
-            )
-          : configContext.injectionInput;
-        if (sharedConfig.injections !== undefined) {
-          configContext.setInjectionInput(mergedInjections);
-          // Store merged result in localStorage to persist
-          localStorage.setItem(
-            'ergogen:injection',
-            JSON.stringify(mergedInjections)
-          );
-        }
-        // Store config in localStorage
-        localStorage.setItem(
-          CONFIG_LOCAL_STORAGE_KEY,
-          JSON.stringify(sharedConfig.config)
-        );
-        // Generate with the new config and merged injections
-        configContext.generateNow(sharedConfig.config, mergedInjections, {
-          pointsonly: false,
-        });
-        // Clear the hash fragment after loading
-        window.history.replaceState(
-          null,
-          '',
-          window.location.pathname + window.location.search
-        );
-      } else {
-        // Show error message
-        console.error(
-          '[App] Failed to load shared configuration from hash (hashchange)',
-          {
-            error: hashResult.error,
-            message: hashResult.message,
-            hashLength: window.location.hash.length,
-          }
-        );
-        configContext.setError(hashResult.message);
-        // Clear the hash fragment to prevent retrying
-        window.history.replaceState(
-          null,
-          '',
-          window.location.pathname + window.location.search
-        );
-      }
-    };
-
-    // Listen for hash changes (e.g., when user navigates to a shared URL)
-    window.addEventListener('hashchange', handleHashChange);
-
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-    };
-  }, [configContext]);
 
   return (
     <>

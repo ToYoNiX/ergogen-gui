@@ -189,7 +189,7 @@ export const createShareableUri = (
 ): string => {
   const encoded = encodeConfig(config, injections);
   const baseUrl = window.location.origin + window.location.pathname;
-  return `${baseUrl}#${encoded}`;
+  return `${baseUrl}?c=${encoded}`;
 };
 
 /**
@@ -198,12 +198,7 @@ export const createShareableUri = (
  * @returns A DecodeResult indicating success or failure with error details, or null if no hash fragment exists
  */
 export const getConfigFromHash = (): DecodeResult | null => {
-  const hash = window.location.hash;
-  if (!hash || hash.length <= 1) {
-    return null;
-  }
-
-  // Remove the '#' prefix
-  const encodedString = hash.substring(1);
-  return decodeConfig(encodedString);
+  const encoded = new URLSearchParams(window.location.search).get('c');
+  if (!encoded) return null;
+  return decodeConfig(encoded);
 };
