@@ -2483,6 +2483,60 @@
 		return chocmini;
 	}
 
+	var crossover;
+	var hasRequiredCrossover;
+
+	function requireCrossover () {
+		if (hasRequiredCrossover) return crossover;
+		hasRequiredCrossover = 1;
+		// Wire crossover for single-sided PCBs
+		// Used to route matrix traces that would otherwise require a second copper layer.
+		// Solder a bare wire through both holes on the back side to bridge the connection.
+		//
+		// Nets
+		//    from: corresponds to pin 1
+		//    to: corresponds to pin 2
+		// Params
+		//    pin_distance: default is 7.62
+		//      distance between the two THT pads in mm
+		//      increase to clear wider traces/obstacles
+
+		crossover = {
+		  params: {
+		    designator: "W",
+		    pin_distance: 7.62,
+		    from: undefined,
+		    to: undefined,
+		  },
+		  body: (p) => {
+		    const half = p.pin_distance / 2;
+
+		    const standard = `
+      	(module WireCrossover (layer F.Cu) (tedit 5B24D78E)
+        ${p.at /* parametric position */}
+        ${"" /* footprint reference */}
+        (fp_text reference "${p.ref}" (at 0 0) (layer F.SilkS) ${p.ref_hide} (effects (font (size 1.27 1.27) (thickness 0.15))))
+        (fp_text value "" (at 0 0) (layer F.SilkS) hide (effects (font (size 1.27 1.27) (thickness 0.15))))
+        ${"" /* crossover symbol — line on back silkscreen showing wire path */}
+				(fp_line (start -${half} 0) (end ${half} 0) (layer B.SilkS) (width 0.1))
+				(fp_line (start -${half} -1) (end -${half} 1) (layer B.SilkS) (width 0.1))
+				(fp_line (start ${half} -1) (end ${half} 1) (layer B.SilkS) (width 0.1))
+      `;
+		    const tht_pads = `
+				${"" /* THT pads — wire connects them on the back */}
+				(pad 1 thru_hole circle (at -${half} 0 ${p.r}) (size 1.6 1.6) (drill 0.8) (layers *.Cu *.Mask) ${p.from})
+				(pad 2 thru_hole circle (at ${half} 0 ${p.r}) (size 1.6 1.6) (drill 0.8) (layers *.Cu *.Mask) ${p.to})
+      `;
+		    return `
+			${standard}
+			${tht_pads}
+			)
+    `;
+		  },
+		};
+		return crossover;
+	}
+
 	var diode$1;
 	var hasRequiredDiode$1;
 
@@ -3031,6 +3085,90 @@
 		return promicro;
 	}
 
+	var resistor;
+	var hasRequiredResistor;
+
+	function requireResistor () {
+		if (hasRequiredResistor) return resistor;
+		hasRequiredResistor = 1;
+		// Any resistor (THT, SMD, or both)
+		// Nets
+		//    from: corresponds to pin 1
+		//    to: corresponds to pin 2
+		// Params
+		//    tht: default is true
+		//      if true, will include through-hole pads
+		//    smd: default is true
+		//      if true, will include SMD pads on both sides for reversible builds
+		//    pin_distance: default is 7.62
+		//      distance between THT pads in mm
+		//    smd_pin_distance: default is 3.3
+		//      distance between SMD pads in mm (fits 0805/0603 packages)
+		//
+		// Common use cases:
+		//    I2C pull-ups:         typically 4.7k between SDA/SCL and VCC
+		//    LED current limiting: typically 100-470 ohm between MCU pin and LED
+		//    General purpose:      any 2-pin resistive component
+		//
+		// note: tht and smd can be used simultaneously (default), or individually
+
+		resistor = {
+		  params: {
+		    designator: 'R',
+		    pin_distance: 7.62,
+		    smd_pin_distance: 3.3,
+		    tht: true,
+		    smd: true,
+		    from: undefined,
+		    to: undefined,
+		  },
+		  body: (p) => {
+		    const half = p.pin_distance / 2;
+		    const smd_half = p.smd_pin_distance / 2;
+
+		    const standard = `
+				(module ComboResistor (layer F.Cu) (tedit 5B24D78E)
+				${p.at /* parametric position */}
+				${'' /* footprint reference */}
+				(fp_text reference "${p.ref}" (at 0 0) (layer F.SilkS) ${p.ref_hide} (effects (font (size 1.27 1.27) (thickness 0.15))))
+				(fp_text value "" (at 0 0) (layer F.SilkS) hide (effects (font (size 1.27 1.27) (thickness 0.15))))
+				${'' /* resistor symbols */}
+				(fp_line (start -0.75 0) (end -0.5 0) (layer F.SilkS) (width 0.1))
+				(fp_line (start -0.5 -0.35) (end -0.5 0.35) (layer F.SilkS) (width 0.1))
+				(fp_line (start -0.5 -0.35) (end 0.5 -0.35) (layer F.SilkS) (width 0.1))
+				(fp_line (start 0.5 -0.35) (end 0.5 0.35) (layer F.SilkS) (width 0.1))
+				(fp_line (start 0.5 0.35) (end -0.5 0.35) (layer F.SilkS) (width 0.1))
+				(fp_line (start 0.5 0) (end 0.75 0) (layer F.SilkS) (width 0.1))
+				(fp_line (start -0.75 0) (end -0.5 0) (layer B.SilkS) (width 0.1))
+				(fp_line (start -0.5 -0.35) (end -0.5 0.35) (layer B.SilkS) (width 0.1))
+				(fp_line (start -0.5 -0.35) (end 0.5 -0.35) (layer B.SilkS) (width 0.1))
+				(fp_line (start 0.5 -0.35) (end 0.5 0.35) (layer B.SilkS) (width 0.1))
+				(fp_line (start 0.5 0.35) (end -0.5 0.35) (layer B.SilkS) (width 0.1))
+				(fp_line (start 0.5 0) (end 0.75 0) (layer B.SilkS) (width 0.1))
+      `;
+		    const tht_pads = `
+				${'' /* THT terminals */}
+				(pad 1 thru_hole rect (at -${half} 0 ${p.r}) (size 1.778 1.778) (drill 0.9906) (layers *.Cu *.Mask) ${p.from})
+				(pad 2 thru_hole circle (at ${half} 0 ${p.r}) (size 1.905 1.905) (drill 0.9906) (layers *.Cu *.Mask) ${p.to})
+      `;
+		    const smd_pads = `
+				${'' /* SMD pads on both sides */}
+				(pad 1 smd rect (at -${smd_half} 0 ${p.r}) (size 0.9 1.2) (layers F.Cu F.Paste F.Mask) ${p.from})
+				(pad 2 smd rect (at ${smd_half} 0 ${p.r}) (size 0.9 1.2) (layers B.Cu B.Paste B.Mask) ${p.to})
+				(pad 1 smd rect (at -${smd_half} 0 ${p.r}) (size 0.9 1.2) (layers B.Cu B.Paste B.Mask) ${p.from})
+				(pad 2 smd rect (at ${smd_half} 0 ${p.r}) (size 0.9 1.2) (layers F.Cu F.Paste F.Mask) ${p.to})
+      `;
+		    return `
+			${standard}
+			${p.tht ? tht_pads : ''}
+			${p.smd ? smd_pads : ''}
+			)
+    `;
+		  },
+		};
+		return resistor;
+	}
+
 	var rgb;
 	var hasRequiredRgb;
 
@@ -3432,6 +3570,121 @@
 		  }
 		};
 		return trrs;
+	}
+
+	var trrsbreakoutv3;
+	var hasRequiredTrrsbreakoutv3;
+
+	function requireTrrsbreakoutv3 () {
+		if (hasRequiredTrrsbreakoutv3) return trrsbreakoutv3;
+		hasRequiredTrrsbreakoutv3 = 1;
+		// TRRS Audio Jack Breakout Module
+		// Board size: 19mm wide x 15mm tall (normal)
+		//
+		// When reverse: true, a second set of pads is added
+		// offset by x_shift and y_shift units (1 unit = 2.54mm)
+		// Outline auto-expands in any direction (positive or negative shifts)
+		//
+		trrsbreakoutv3 = {
+		  params: {
+		    designator: 'TRRS',
+		    reverse: false,
+		    x_shift: 1,
+		    y_shift: 1,
+		    TIP: undefined,
+		    R1:  undefined,
+		    R2:  undefined,
+		    S:   undefined,
+		    NC_T1: undefined,
+		    NC_T2: undefined,
+		    NC_B1: undefined,
+		    NC_B2: undefined,
+		  },
+		  body: p => {
+		    const u = 2.54;
+		    const dx = p.x_shift * u;
+		    const dy = p.y_shift * u;
+
+		    const hx  = -7.5;
+		    const hy  = [-3.81, -1.27, 1.27, 3.81];
+		    const nc_t = { x1: 3.0, x2: 5.54, y: -6.5 };
+		    const nc_b = { x1: 3.0, x2: 5.54, y:  6.5 };
+
+		    // Outline corners — expand in whichever direction shift goes
+		    const fab_right  = p.reverse ? Math.max( 9.5, nc_b.x2 + dx + 0.85 + 0.5) :  9.5;
+		    const fab_bottom = p.reverse ? Math.max( 7.5, nc_b.y  + dy + 0.85 + 0.5) :  7.5;
+		    const fab_left   = p.reverse ? Math.min(-9.5, hx      + dx - 0.85 - 0.5) : -9.5;
+		    const fab_top    = p.reverse ? Math.min(-7.5, nc_t.y  + dy - 0.85 - 0.5) : -7.5;
+
+		    const crt_right  = fab_right  + 0.5;
+		    const crt_bottom = fab_bottom + 0.5;
+		    const crt_left   = fab_left   - 0.5;
+		    const crt_top    = fab_top    - 0.5;
+
+		    return `
+    (module trrs_breakout (layer F.Cu) (tedit 00000001)
+${p.at}
+      (fp_text reference "${p.ref}" (at 0 -9) (layer F.SilkS)
+${p.ref_hide} (effects (font (size 1 1) (thickness 0.15))))
+      (fp_text value "TRRS_Breakout" (at 0 9) (layer F.Fab)
+        (effects (font (size 1 1) (thickness 0.15))))
+
+${'' /* =============================================
+	           OUTLINES
+	           ============================================= */}
+      (fp_line (start ${fab_left}  ${fab_top})    (end   ${fab_right} ${fab_top})    (layer F.Fab) (width 0.12))
+      (fp_line (start ${fab_right} ${fab_top})    (end   ${fab_right} ${fab_bottom}) (layer F.Fab) (width 0.12))
+      (fp_line (start ${fab_right} ${fab_bottom}) (end   ${fab_left}  ${fab_bottom}) (layer F.Fab) (width 0.12))
+      (fp_line (start ${fab_left}  ${fab_bottom}) (end   ${fab_left}  ${fab_top})    (layer F.Fab) (width 0.12))
+
+      (fp_line (start ${crt_left}  ${crt_top})    (end   ${crt_right} ${crt_top})    (layer F.CrtYd) (width 0.05))
+      (fp_line (start ${crt_right} ${crt_top})    (end   ${crt_right} ${crt_bottom}) (layer F.CrtYd) (width 0.05))
+      (fp_line (start ${crt_right} ${crt_bottom}) (end   ${crt_left}  ${crt_bottom}) (layer F.CrtYd) (width 0.05))
+      (fp_line (start ${crt_left}  ${crt_bottom}) (end   ${crt_left}  ${crt_top})    (layer F.CrtYd) (width 0.05))
+
+      (fp_line (start ${fab_left}  ${fab_top})    (end   ${fab_right} ${fab_top})    (layer F.SilkS) (width 0.12))
+      (fp_line (start ${fab_right} ${fab_top})    (end   ${fab_right} ${fab_bottom}) (layer F.SilkS) (width 0.12))
+      (fp_line (start ${fab_right} ${fab_bottom}) (end   ${fab_left}  ${fab_bottom}) (layer F.SilkS) (width 0.12))
+      (fp_line (start ${fab_left}  ${fab_bottom}) (end   ${fab_left}  ${fab_top})    (layer F.SilkS) (width 0.12))
+
+${'' /* =============================================
+	           SET A — always present
+	           S at top, TIP at bottom
+	           ============================================= */}
+${ p.reverse ? `      (fp_text user "L" (at ${hx - 1.5} ${hy[0]}) (layer F.SilkS) (effects (font (size 0.6 0.6) (thickness 0.1))))` : '' }
+
+      (pad S   thru_hole rect   (at ${hx} ${hy[0]} ${p.r}) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) ${p.S})
+      (pad R2  thru_hole circle (at ${hx} ${hy[1]} ${p.r}) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) ${p.R2})
+      (pad R1  thru_hole circle (at ${hx} ${hy[2]} ${p.r}) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) ${p.R1})
+      (pad TIP thru_hole circle (at ${hx} ${hy[3]} ${p.r}) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) ${p.TIP})
+
+      (pad NC_T1 thru_hole rect   (at ${nc_t.x1} ${nc_t.y} ${p.r}) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) ${p.NC_T1})
+      (pad NC_T2 thru_hole circle (at ${nc_t.x2} ${nc_t.y} ${p.r}) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) ${p.NC_T2})
+      (pad NC_B1 thru_hole rect   (at ${nc_b.x1} ${nc_b.y} ${p.r}) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) ${p.NC_B1})
+      (pad NC_B2 thru_hole circle (at ${nc_b.x2} ${nc_b.y} ${p.r}) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) ${p.NC_B2})
+
+${'' /* =============================================
+	           SET B — only when reverse: true
+	           TIP at top, S at bottom (reversed)
+	           all pads offset by dx, dy
+	           ============================================= */}
+${ p.reverse ? `
+      (fp_text user "R" (at ${hx + dx - 1.5} ${hy[0] + dy}) (layer F.SilkS) (effects (font (size 0.6 0.6) (thickness 0.1))))
+
+      (pad TIP thru_hole circle (at ${hx + dx} ${hy[0] + dy} ${p.r}) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) ${p.TIP})
+      (pad R1  thru_hole circle (at ${hx + dx} ${hy[1] + dy} ${p.r}) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) ${p.R1})
+      (pad R2  thru_hole circle (at ${hx + dx} ${hy[2] + dy} ${p.r}) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) ${p.R2})
+      (pad S   thru_hole rect   (at ${hx + dx} ${hy[3] + dy} ${p.r}) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) ${p.S})
+
+      (pad NC_T1 thru_hole rect   (at ${nc_t.x1 + dx} ${nc_t.y + dy} ${p.r}) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) ${p.NC_T1})
+      (pad NC_T2 thru_hole circle (at ${nc_t.x2 + dx} ${nc_t.y + dy} ${p.r}) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) ${p.NC_T2})
+      (pad NC_B1 thru_hole rect   (at ${nc_b.x1 + dx} ${nc_b.y + dy} ${p.r}) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) ${p.NC_B1})
+      (pad NC_B2 thru_hole circle (at ${nc_b.x2 + dx} ${nc_b.y + dy} ${p.r}) (size 1.7 1.7) (drill 1.0) (layers *.Cu *.Mask) ${p.NC_B2})
+` : '' }
+    )
+  `}
+		};
+		return trrsbreakoutv3;
 	}
 
 	var via;
@@ -7788,7 +8041,7 @@
 		    const hotswap_common = `
     ${'' /* Middle Hole */}
     ${p.include_plated_holes ? `
-    (pad ${p.reversible ? '""' : 1} thru_hole circle (at 0 -5.95 ${p.r}) (size 3.3 3.3) (drill 3) (layers "*.Cu" "*.Mask") ${p.reversible ? '' : p.from.str})
+    (pad ${p.reversible ? '""' : '"1"'} thru_hole circle (at 0 -5.95 ${p.r}) (size 3.3 3.3) (drill 3) (layers "*.Cu" "*.Mask") ${p.reversible ? '' : p.from.str})
     `: `
     (pad "" np_thru_hole circle (at 0 -5.95 ${p.r}) (size 3 3) (drill 3) (layers "*.Cu" "*.Mask"))
     `}
@@ -9497,16 +9750,16 @@
 		    function pins(def_neg, def_pos) {
 		      if (p.symmetric && p.reversible) {
 		        return `
-    (pad 2 thru_hole oval (at ${def_pos} 3.2 ${p.r}) (size 1.6 2.2) (drill oval 0.9 1.5) (layers "*.Cu" "*.Mask") ${p.SL.str})
-    (pad 3 thru_hole oval (at ${def_pos} 6.2 ${p.r}) (size 1.6 2.2) (drill oval 0.9 1.5) (layers "*.Cu" "*.Mask") ${p.R2.str})
-    (pad 4 thru_hole oval (at ${def_pos} 10.75 ${p.r}) (size 1.6 3.3) (drill oval 0.9 2.6) (layers "*.Cu" "*.Mask") ${p.TP.str})
+    (pad "2" thru_hole oval (at ${def_pos} 3.2 ${p.r}) (size 1.6 2.2) (drill oval 0.9 1.5) (layers "*.Cu" "*.Mask") ${p.SL.str})
+    (pad "3" thru_hole oval (at ${def_pos} 6.2 ${p.r}) (size 1.6 2.2) (drill oval 0.9 1.5) (layers "*.Cu" "*.Mask") ${p.R2.str})
+    (pad "4" thru_hole oval (at ${def_pos} 10.75 ${p.r}) (size 1.6 3.3) (drill oval 0.9 2.6) (layers "*.Cu" "*.Mask") ${p.TP.str})
         `
 		      } else {
 		        return `
-    (pad 2 thru_hole oval (at ${def_pos} 3.2 ${p.r}) (size 1.6 2.2) (drill oval 0.9 1.5) (layers "*.Cu" "*.Mask") ${p.SL.str})
-    (pad 3 thru_hole oval (at ${def_pos} 6.2 ${p.r}) (size 1.6 2.2) (drill oval 0.9 1.5) (layers "*.Cu" "*.Mask") ${p.R2.str})
-    (pad 4 thru_hole oval (at ${def_pos} 10.2 ${p.r}) (size 1.6 2.2) (drill oval 0.9 1.5) (layers "*.Cu" "*.Mask") ${p.TP.str})
-    (pad 5 thru_hole oval (at ${def_neg} 11.3 ${p.r}) (size 1.6 2.2) (drill oval 0.9 1.5) (layers "*.Cu" "*.Mask") ${p.R1.str})
+    (pad "2" thru_hole oval (at ${def_pos} 3.2 ${p.r}) (size 1.6 2.2) (drill oval 0.9 1.5) (layers "*.Cu" "*.Mask") ${p.SL.str})
+    (pad "3" thru_hole oval (at ${def_pos} 6.2 ${p.r}) (size 1.6 2.2) (drill oval 0.9 1.5) (layers "*.Cu" "*.Mask") ${p.R2.str})
+    (pad "4" thru_hole oval (at ${def_pos} 10.2 ${p.r}) (size 1.6 2.2) (drill oval 0.9 1.5) (layers "*.Cu" "*.Mask") ${p.TP.str})
+    (pad "5" thru_hole oval (at ${def_neg} 11.3 ${p.r}) (size 1.6 2.2) (drill oval 0.9 1.5) (layers "*.Cu" "*.Mask") ${p.R1.str})
         `
 		      }
 		    }
@@ -13918,6 +14171,7 @@
 		  button: requireButton(),
 		  choc: requireChoc$1(),
 		  chocmini: requireChocmini(),
+		  crossover: requireCrossover(),
 		  diode: requireDiode$1(),
 		  jstph: requireJstph(),
 		  jumper: requireJumper(),
@@ -13926,11 +14180,13 @@
 		  omron: requireOmron(),
 		  pad: requirePad(),
 		  promicro: requirePromicro(),
+		  resistor: requireResistor(),
 		  rgb: requireRgb(),
 		  rotary: requireRotary(),
 		  scrollwheel: requireScrollwheel(),
 		  slider: requireSlider(),
 		  trrs: requireTrrs(),
+		  trrsbreakoutv3: requireTrrsbreakoutv3(),
 		  via: requireVia(),
 		  // @ceoloide's footprints
 		  'ceoloide/battery_connector_jst_ph_2': requireBattery_connector_jst_ph_2(),

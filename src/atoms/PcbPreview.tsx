@@ -1,41 +1,48 @@
-/**
- * Props for the PcbPreview component.
- * @typedef {object} Props
- * @property {string} pcb - The KiCad PCB file content as a string.
- * @property {string} key - A unique key for the component, important for React's rendering logic.
- * @property {string} [aria-label] - An optional aria-label for the preview container.
- * @property {string} [data-testid] - An optional data-testid for testing purposes.
- */
+import { useRef, useEffect } from 'react';
+
 type Props = {
   pcb: string;
-  key: string;
   'aria-label'?: string;
   'data-testid'?: string;
 };
 
-/**
- * A React component that embeds a KiCad PCB preview using the `<kicanvas-embed>` custom element.
- * This component takes the PCB data as a string and renders it within an interactive canvas.
- *
- * @param {Props} props - The props for the component.
- * @returns {JSX.Element} A `<kicanvas-embed>` element containing the PCB source.
- */
 const PcbPreview = ({
   pcb,
-  key,
   'aria-label': ariaLabel,
   'data-testid': dataTestId,
-}: Props): JSX.Element => (
-  <kicanvas-embed
-    key={key}
-    controls="full"
-    controlslist="nodownload nooverlay"
-    theme="kicad"
-    aria-label={ariaLabel}
-    data-testid={dataTestId}
-  >
-    <kicanvas-source type="board">{pcb}</kicanvas-source>
-  </kicanvas-embed>
-);
+}: Props): JSX.Element => {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = ref.current;
+    if (!container || !pcb) return;
+
+    const embed = document.createElement('kicanvas-embed');
+    embed.setAttribute('controls', 'full');
+    embed.setAttribute('controlslist', 'nodownload nooverlay');
+    embed.setAttribute('theme', 'kicad');
+
+    const source = document.createElement('kicanvas-source');
+    source.setAttribute('type', 'board');
+    source.textContent = pcb;
+    embed.appendChild(source);
+
+    container.innerHTML = '';
+    container.appendChild(embed);
+
+    return () => {
+      container.innerHTML = '';
+    };
+  }, [pcb]);
+
+  return (
+    <div
+      ref={ref}
+      style={{ width: '100%', height: '100%' }}
+      aria-label={ariaLabel}
+      data-testid={dataTestId}
+    />
+  );
+};
 
 export default PcbPreview;

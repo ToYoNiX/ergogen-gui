@@ -34,7 +34,7 @@ const createMockFileReader = (fileContent: string, shouldError = false) => {
             this.onload({ target: this });
           }
         }
-      }, 0);
+      });
     }
   };
 };

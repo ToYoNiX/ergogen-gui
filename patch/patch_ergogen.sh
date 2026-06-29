@@ -19,6 +19,8 @@ if [ -d node_modules/ergogen ]; then
   # Add the footprints to the index
   echo "Patching footprints/index.js..."
   cp -f patch/footprints_index.js node_modules/ergogen/src/footprints/index.js
+  echo "Patching footprints/trrsbreakoutv3.js..."
+  cp -f patch/trrsbreakoutv3.js node_modules/ergogen/src/footprints/trrsbreakoutv3.js
 else
   echo "Directory node_modules/ergogen not found."
 fi
