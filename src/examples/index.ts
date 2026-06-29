@@ -9,6 +9,7 @@ import Reviung41 from './reviung41';
 import Tiny20 from './tiny20';
 import Alpha from './alpha';
 import Plank from './plank';
+import Sblit36 from './sblit36';
 
 /**
  * Represents a group of configuration options for the react-select component.
@@ -48,7 +49,7 @@ const emptyExamples = [EmptyYAML];
 
 const simpleExamples = [Absolem, Atreus];
 
-const completeExamples = [Adux, CorneyIsland, Sweeplike, Reviung41, Tiny20];
+const completeExamples = [Adux, CorneyIsland, Sweeplike, Reviung41, Tiny20, Sblit36];
 
 const miscExamples = [Wubbo, Alpha, Plank];
 
